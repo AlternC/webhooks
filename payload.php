@@ -24,11 +24,6 @@ $github=array(
 	)
 );
 
-
-verify_signature(file_get_contents('php://input'), $webhook_secret);
-
-die();
-
 $travis_config=array(
 	"url" => "https://api.travis-ci.com/repo/AlternC%2Fdeb-builder/requests",
 	"headers" => array(
@@ -59,6 +54,10 @@ $github['event']=$_SERVER['HTTP_X_GITHUB_EVENT'] ?? $_SERVER["HTTP_X_GITLAB_EVEN
 
 if (!in_array($github['event'], ["push","Push Hook","Tag Push Hook"] )) {
 	deny_request("Invalid event");
+}
+
+if (!verify_signature(file_get_contents('php://input'), $webhook_secret)) {
+	deny_request("Invalid signature");
 }
 
 $payload=json_decode($_REQUEST['payload']) ?? json_decode(file_get_contents('php://input'));
@@ -110,20 +109,18 @@ function verify_signature($payload, $webhook_secret) {
 	$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'];
 
 	if (empty($signature)) {
-		deny_request('Do you set your token ?');
+		return false;
 	}
 
         $signature_parts = explode('=', $signature);
 
         if (count($signature_parts) != 2) {
-                deny_request('Invalid token ?');
+                return false;
         }
 
         $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
 
-        if (! hash_equals($known_signature, $signature_parts[1])) {
-                deny_request('Invalid signature');
-        }
+        return hash_equals($known_signature, $signature_parts[1]);
 }
 
 
