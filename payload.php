@@ -56,12 +56,12 @@ if (!preg_match('#^[aA]ltern[cC]/(alternc-?|AlternC)#',$github['repository']['na
 }
 
 if (!preg_match('#(refs/heads/main)|(refs/tags/[\d\.]+)#',$github['ref'])) {
-        echo "deny";
+        deny_request('branch not allowed to be build');
 }
 
 trig_travis($travis_config,$github['repository']['name']);
 
-echo "I was payloaded";
+echo "\nI was payloaded";
 
 
 // Method to use
