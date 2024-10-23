@@ -59,7 +59,7 @@ if (!in_array($github['event'], ["push","Push Hook","Tag Push Hook"] )) {
 	deny_request("Invalid event");
 }
 
-if (!verify_signature(file_get_contents('php://input'), $webhook_secret)) {
+if (!verify_signature(file_get_contents('php://input'), $webhook_secret, $webhook_token)) {
 	deny_request("Invalid signature");
 }
 
@@ -97,9 +97,14 @@ function deny_request($message ="Invalid request") {
 	die($message);
 }
 
-function verify_signature($payload, $webhook_secret) {
+function verify_signature($payload, $webhook_secret, $webhook_token) {
+
+	if (!empty($_SERVER['HTTP_X_GITLAB_TOKEN']) && $_SERVER['HTTP_X_GITLAB_TOKEN'] === $webhook_token ) {
+		return true;
+	}
 
 	$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'];
+
 
 	if (empty($signature)) {
 		return false;
