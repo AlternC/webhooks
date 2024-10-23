@@ -39,7 +39,7 @@ if (!isset($_SERVER["HTTP_X_GITHUB_EVENT"]) && !isset($_SERVER["HTTP_X_GITLAB_EV
 
 $github['event']=$_SERVER['HTTP_X_GITHUB_EVENT'] ?? $_SERVER["HTTP_X_GITLAB_EVENT"];
 
-if (!in_array($github['event'], ["push","Push Hook"] )) {
+if (!in_array($github['event'], ["push","Push Hook","Tag Push Hook"] )) {
 	deny_request("Invalid event");
 }
 
@@ -84,14 +84,18 @@ function trig_travis($travis,$repository) {
         https://api.travis-ci.com/repo/AlternC%2Fdeb-builder/requests
 */
 
-	$travis['body']['config']['env']['global'][0]="REPO_TO_BUILD=$repository";
+	if (str_starts_with($repository,"https://")) {
+		$travis['body']['config']['env']['global'][0]="REPO_URL_TO_BUILD=$repository";
+	} else {
+		$travis['body']['config']['env']['global'][0]="REPO_TO_BUILD=$repository";
+	}
 	$params = json_encode($travis['body'],JSON_NUMERIC_CHECK);
 
 	$options = array(
 		CURLOPT_POST => true,
 		CURLOPT_HTTPHEADER => $travis['headers'],
 		CURLOPT_POSTFIELDS => $params,
-		CURLOPT_URL => $travis['url'], 
+		CURLOPT_URL => $travis['url'],
 		CURLOPT_RETURNTRANSFER=> true
 	);
 
