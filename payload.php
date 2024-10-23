@@ -94,16 +94,6 @@ function deny_request($message ="Invalid request") {
 	die($message);
 }
 
-
-function detectRequestBody() {
-    $rawInput = fopen('php://input', 'r');
-    $tempStream = fopen('php://temp', 'r+');
-    stream_copy_to_stream($rawInput, $tempStream);
-    rewind($tempStream);
-
-    return $tempStream;
-}
-
 function verify_signature($payload, $webhook_secret) {
 
 	$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'];
@@ -160,5 +150,3 @@ function trig_travis($travis,$repository) {
         // Freeing curl resource
 	curl_close($ch);
 }
-
-
