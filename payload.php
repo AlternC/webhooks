@@ -1,5 +1,22 @@
 <?php
 
+ob_flush();
+ob_start();
+
+file_put_contents('/tmp/dump.payload.txt', file_get_contents('php://input'));
+file_put_contents('/tmp/dump.headers.txt', $_SERVER);
+
+function display_dump($content) {
+	//var_dump($content);
+	if (is_array($content)) {
+		foreach ($content as $element) {
+			echo $element."\n";
+		}
+	} else {
+		echo $content."\n";
+	}
+}
+
 include('config/config.php');
 
 $github=array(
@@ -10,6 +27,11 @@ $github=array(
 		"name" => null
 	)
 );
+
+
+verify_signature(file_get_contents('php://input'), $webhook_token);
+
+die();
 
 $travis_config=array(
 	"url" => "https://api.travis-ci.com/repo/AlternC%2Fdeb-builder/requests",
@@ -70,8 +92,97 @@ echo "\nI was payloaded";
 
 function deny_request($message ="Invalid request") {
 	header("HTTP/1.1 412 Precondition Failed");
+	$content = ob_get_flush();
+	file_put_contents("/tmp/dump.txt", $content);
+	echo $content;
+
 	die($message);
 }
+
+
+function detectRequestBody() {
+    $rawInput = fopen('php://input', 'r');
+    $tempStream = fopen('php://temp', 'r+');
+    stream_copy_to_stream($rawInput, $tempStream);
+    rewind($tempStream);
+
+    return $tempStream;
+}
+
+function verify_signature($payload, $webhook_token) {
+
+	define('STDIN', fopen('php://stdin', 'r'));
+
+	$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'];
+
+	if (empty($signature)) {
+		deny_request('Do you set your token ?');
+	}
+
+        $signature_parts = explode('=', $signature);
+
+        if (count($signature_parts) != 2) {
+                deny_request('Invalid token ?');
+        }
+
+echo "Signature : ";
+	display_dump($signature_parts);
+	display_dump($webhook_token);
+
+
+
+	//Mode étalon
+	//https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries#testing-the-webhook-payload-validation
+echo "||| Mode étalon done\n";
+	$payload = "Hello, World!";
+        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+	//display_dump($payload);
+	display_dump($known_signature);
+
+
+echo "||| Jeu de test\n";
+	// Jeu de test
+	$payaloads = [];
+	$payloads[] = file_get_contents('php://input');
+	//$payloads[] = stream_get_contents(detectRequestBody());
+
+	$payloads[] = urldecode(file_get_contents('php://input'));
+
+	$payloads[] = substr(file_get_contents('php://input'),8);
+
+	$payloads[] = substr(urldecode(file_get_contents('php://input')),8);
+	//$payloads[] = $_REQUEST['payload'];
+
+	$payloads[] = stream_get_contents(STDIN);
+
+	foreach($payloads as $payload) {
+		$payload_source = $payload;
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+		display_dump($payload);
+		display_dump($known_signature);
+
+		$payload = utf8_encode($payload_source);
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+		display_dump($payload);
+		display_dump($known_signature);
+
+		$payload = utf8_decode($payload_source);
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+		display_dump($payload);
+		display_dump($known_signature);
+
+		$payload = mb_convert_encoding($payload_source, 'HTML-ENTITIES', "UTF-8");
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+		display_dump($payload);
+		display_dump($known_signature);
+		echo "------\n";
+	}
+
+        if (! hash_equals($known_signature, $signature_parts[1])) {
+                deny_request('Invalid signature');
+        }
+}
+
 
 function trig_travis($travis,$repository) {
 
@@ -104,8 +215,10 @@ function trig_travis($travis,$repository) {
 
 	//Trig travis
 	$result = curl_exec($ch);
-	var_dump($result);
+	display_dump($result);
 
         // Freeing curl resource
 	curl_close($ch);
 }
+
+
