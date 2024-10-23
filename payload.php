@@ -29,7 +29,7 @@ $github=array(
 );
 
 
-verify_signature(file_get_contents('php://input'), $webhook_token);
+verify_signature(file_get_contents('php://input'), $webhook_secret);
 
 die();
 
@@ -109,7 +109,7 @@ function detectRequestBody() {
     return $tempStream;
 }
 
-function verify_signature($payload, $webhook_token) {
+function verify_signature($payload, $webhook_secret) {
 
 	define('STDIN', fopen('php://stdin', 'r'));
 
@@ -127,7 +127,7 @@ function verify_signature($payload, $webhook_token) {
 
 echo "Signature : ";
 	display_dump($signature_parts);
-	display_dump($webhook_token);
+	display_dump($webhook_secret);
 
 
 
@@ -135,7 +135,7 @@ echo "Signature : ";
 	//https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries#testing-the-webhook-payload-validation
 echo "||| Mode étalon done\n";
 	$payload = "Hello, World!";
-        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
 	//display_dump($payload);
 	display_dump($known_signature);
 
@@ -157,22 +157,22 @@ echo "||| Jeu de test\n";
 
 	foreach($payloads as $payload) {
 		$payload_source = $payload;
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
 		display_dump($payload);
 		display_dump($known_signature);
 
 		$payload = utf8_encode($payload_source);
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
 		display_dump($payload);
 		display_dump($known_signature);
 
 		$payload = utf8_decode($payload_source);
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
 		display_dump($payload);
 		display_dump($known_signature);
 
 		$payload = mb_convert_encoding($payload_source, 'HTML-ENTITIES', "UTF-8");
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_token);
+	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
 		display_dump($payload);
 		display_dump($known_signature);
 		echo "------\n";

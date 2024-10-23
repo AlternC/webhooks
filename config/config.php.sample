@@ -1,0 +1,4 @@
+<?php
+
+$travis_token='Travis tokent to execute CI/CD'; 
+$webhook_secret='A secret to validate content from github';
