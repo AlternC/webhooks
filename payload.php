@@ -1,10 +1,6 @@
 <?php
-
 ob_flush();
 ob_start();
-
-file_put_contents('/tmp/dump.payload.txt', file_get_contents('php://input'));
-file_put_contents('/tmp/dump.headers.txt', $_SERVER);
 
 function display_dump($content) {
 	//var_dump($content);
@@ -111,8 +107,6 @@ function detectRequestBody() {
 
 function verify_signature($payload, $webhook_secret) {
 
-	define('STDIN', fopen('php://stdin', 'r'));
-
 	$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'];
 
 	if (empty($signature)) {
@@ -125,58 +119,7 @@ function verify_signature($payload, $webhook_secret) {
                 deny_request('Invalid token ?');
         }
 
-echo "Signature : ";
-	display_dump($signature_parts);
-	display_dump($webhook_secret);
-
-
-
-	//Mode étalon
-	//https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries#testing-the-webhook-payload-validation
-echo "||| Mode étalon done\n";
-	$payload = "Hello, World!";
         $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
-	//display_dump($payload);
-	display_dump($known_signature);
-
-
-echo "||| Jeu de test\n";
-	// Jeu de test
-	$payaloads = [];
-	$payloads[] = file_get_contents('php://input');
-	//$payloads[] = stream_get_contents(detectRequestBody());
-
-	$payloads[] = urldecode(file_get_contents('php://input'));
-
-	$payloads[] = substr(file_get_contents('php://input'),8);
-
-	$payloads[] = substr(urldecode(file_get_contents('php://input')),8);
-	//$payloads[] = $_REQUEST['payload'];
-
-	$payloads[] = stream_get_contents(STDIN);
-
-	foreach($payloads as $payload) {
-		$payload_source = $payload;
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
-		display_dump($payload);
-		display_dump($known_signature);
-
-		$payload = utf8_encode($payload_source);
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
-		display_dump($payload);
-		display_dump($known_signature);
-
-		$payload = utf8_decode($payload_source);
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
-		display_dump($payload);
-		display_dump($known_signature);
-
-		$payload = mb_convert_encoding($payload_source, 'HTML-ENTITIES', "UTF-8");
-	        $known_signature = hash_hmac($signature_parts['0'], $payload, $webhook_secret);
-		display_dump($payload);
-		display_dump($known_signature);
-		echo "------\n";
-	}
 
         if (! hash_equals($known_signature, $signature_parts[1])) {
                 deny_request('Invalid signature');
