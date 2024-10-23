@@ -32,26 +32,28 @@ $travis_config=array(
 	)
 );
 
-if (!isset($_SERVER["HTTP_X_GITHUB_EVENT"])) {
+
+if (!isset($_SERVER["HTTP_X_GITHUB_EVENT"]) && !isset($_SERVER["HTTP_X_GITLAB_EVENT"])) {
 	deny_request("Is it CI/CD event ?");
 }
 
-$github['event']=$_SERVER['HTTP_X_GITHUB_EVENT'];
+$github['event']=$_SERVER['HTTP_X_GITHUB_EVENT'] ?? $_SERVER["HTTP_X_GITLAB_EVENT"];
 
-if ($github['event'] != "push") {
+if (!in_array($github['event'], ["push","Push Hook"] )) {
 	deny_request("Invalid event");
 }
 
-$payload=json_decode($_REQUEST['payload']);
+$payload=json_decode($_REQUEST['payload']) ?? json_decode(file_get_contents('php://input'));
 
 if (empty($payload)) {
 	deny_request('payload invalid or missing');
 }
 
 $github['ref'] = $payload->ref;
-$github['repository']['name'] = $payload->repository->full_name;
+$github['repository']['name'] = $payload->repository->full_name ?? $payload->repository->git_http_url;
 
-if (!preg_match('#^[aA]ltern[cC]/(alternc-?|AlternC)#',$github['repository']['name'] )) {
+
+if (!preg_match('#^[aA]ltern[cC]/(alternc-?|AlternC)#',$github['repository']['name']) && !preg_match('#^https?://#',$github['repository']['name']) ) {
 	deny_request('project not allowed');
 }
 
