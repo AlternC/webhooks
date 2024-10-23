@@ -1,4 +1,7 @@
 <?php
+
+define('DEBUG',false);
+
 ob_flush();
 ob_start();
 
@@ -82,15 +85,15 @@ trig_travis($travis_config,$github['repository']['name']);
 
 echo "\nI was payloaded";
 
-
 // Method to use
 
 function deny_request($message ="Invalid request") {
 	header("HTTP/1.1 412 Precondition Failed");
 	$content = ob_get_flush();
-	file_put_contents("/tmp/dump.txt", $content);
+	if (defined('DEBUG')) {
+		file_put_contents("/tmp/dump.txt", $content);
+	}
 	echo $content;
-
 	die($message);
 }
 
